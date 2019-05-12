@@ -85,28 +85,25 @@ def getWinrate():
         champion['winrate'] = champion['wins']/champion['games']
     return championInfo
 
-def sortChampionGames(championInfo):
+def sortChampionName(championInfo):
     championInfo.sort(key = lambda x: x['champion'])
 
 def sortNumGames(championInfo):
     championInfo.sort(key = lambda x: x['games'], reverse = True)
 
-def sortWinsGames(championInfo):
+def sortWins(championInfo):
     championInfo.sort(key = lambda x: x['wins'], reverse = True)
 
-def sortWinrateGames(championInfo):
+def sortWinrate(championInfo):
     championInfo.sort(key = lambda x: x['winrate'], reverse = True)
-
-
-    
 #testing
 
 #printval = getWinrate()
-#sortChampionGames(printval)
+#sortChampionName(printval)
 #print(printval)
 #sortNumGames(printval)
 #print(printval)
-#sortWinsGames(printval)
+#sortWins(printval)
 #print(printval)
-#sortWinrateGames(printval)
+#sortWinrate(printval)
 #print(printval)
