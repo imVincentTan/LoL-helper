@@ -5,7 +5,10 @@ Created on Sat May 11 16:47:03 2019
 @author: Vincent
 """
 
-#this guy doesnt run because I ran out of time. Come back to fix it at around line 37
+#takes a while to load, but code is O(n) 
+#Need to figure out how to handle efficiently calling the API to reduce runtime.
+#complexity breakdown: (getWinRate)
+#
 
 import requests
 
@@ -14,33 +17,96 @@ import championById
 import summonerInfo
 import userInput
 
-playerid = summonerInfo.getAccountId()
+playerId = summonerInfo.getAccountId()
 key = apiKey.key
 region = userInput.region
 
-response = requests.get('https://'+region+'.api.riotgames.com/lol/match/v4/matchlists/by-account/' + playerid + '?api_key=' + key)
-matchList = response.json()
-
-
-matchInfo = []
-#champions played by id
-championsPlayed = {}
-counter = 0
-
-#for each match played
-for a in matchList["matches"]:
-    #if the champion has already been played, increment the statistic in match info.
-    if (a["champion"] in championsPlayed):
+def getWinrate():
+    response = requests.get('https://'+region+'.api.riotgames.com/lol/match/v4/matchlists/by-account/' + playerId + '?api_key=' + key)
+    matchList = response.json()
+    
+    championInfo = []
+    #key:value = championId:index value in championInfo
+    #note will be obsolete after sorting championInfo
+    championsPlayed = {}
+    championsPlayedInd = 0
+    
+    #for each match played
+    for ind, matchCount in enumerate(matchList["matches"]):
+        #this is to make sure we don't exceed the api call rate limit. 
+        if ind >= 50:
+            break
+        #The information for the specific match the player played
+        response = requests.get('https://'+region+'.api.riotgames.com/lol/match/v4/matches/' + str(matchCount['gameId']) + '?api_key=' + key)
+        matchInfo = response.json()
+        #Finding the participantId
+        for participantCount in matchInfo["participantIdentities"]:
+            if participantCount['player']['currentAccountId'] == playerId:
+                participantId = participantCount['participantId']
+        #determining whether the player won or lost.
+        playerWon = False
+        for participantCount in matchInfo['participants']:
+            if participantCount['participantId'] == participantId:
+                if participantCount['stats']['win']:
+                    playerWon = True
+                    break
+                break
+                        
+        #if the champion has already been played, increment the statistic in match info.
+        if (matchCount["champion"] in championsPlayed):
+            championInfo[championsPlayed[matchCount['champion']]]['games'] += 1
+            if playerWon:
+                championInfo[championsPlayed[matchCount['champion']]]['wins'] += 1
+            else:
+                championInfo[championsPlayed[matchCount['champion']]]['losses'] += 1
         
-    #if the champion has not been played, add the champion to championsPlayed and append new information to matchInfo
-    else:
-        matchInfo = requests.get('https://'+region+'.api.riotgames.com/lol/match/v4/matches/' + str(a['gameId']) + '?api_key=' + key)
-        if 
-        temp = {"champion" : championById[a["champion"]],
-                "games" : 1,
-                "wins" : }
-        matchInfo.append()
+        #if the champion has not been played, add the champion to championsPlayed and append new information to matchInfo
+        else:
+            #if the player won
+            if playerWon:
+                temp = {'champion' : championById.champions[matchCount['champion']],
+                    'games' : 1,
+                    'wins' : 1,
+                    'losses' : 0,
+                    'winrate' : 1}
+            #if the player lost
+            else:
+                temp = {'champion' : championById.champions[matchCount['champion']],
+                    'games' : 1,
+                    'wins' : 0,
+                    'losses' : 1,
+                    'winrate' : 0}
+            championInfo.append(temp)
+            championsPlayed[matchCount['champion']] = championsPlayedInd
+            championsPlayedInd += 1
+    
+    #calculate winrates
+    for champion in championInfo:
+        champion['winrate'] = champion['wins']/champion['games']
+    return championInfo
 
-for i in championById.champions:
-    if matchesplayed[i] > 0:
-        print(championById.champions[i] + ': ' + str(matchesplayed[i]))
+def sortChampionGames(championInfo):
+    championInfo.sort(key = lambda x: x['champion'])
+
+def sortNumGames(championInfo):
+    championInfo.sort(key = lambda x: x['games'], reverse = True)
+
+def sortWinsGames(championInfo):
+    championInfo.sort(key = lambda x: x['wins'], reverse = True)
+
+def sortWinrateGames(championInfo):
+    championInfo.sort(key = lambda x: x['winrate'], reverse = True)
+
+
+    
+#testing
+
+#printval = getWinrate()
+#sortChampionGames(printval)
+#print(printval)
+#sortNumGames(printval)
+#print(printval)
+#sortWinsGames(printval)
+#print(printval)
+#sortWinrateGames(printval)
+#print(printval)
